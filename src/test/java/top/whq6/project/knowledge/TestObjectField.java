@@ -2,6 +2,7 @@ package top.whq6.project.knowledge;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Assert;
 import org.junit.Test;
 import top.whq6.project.bean.Person;
@@ -62,5 +63,34 @@ public class TestObjectField {
     Assert.assertEquals(fields.length, 1);
 
     Assert.assertEquals(fields[0].getName(), "teacher");
+  }
+
+  @Test
+  public void testStringUpperCase() {
+    String name = "name";
+
+    name = "get" + name.substring(0, 1).toUpperCase() + name.substring(1);
+
+    System.out.println(name);
+  }
+
+  @Test
+  public void testConcurrentHashMapClone() {
+    Student student = new Student();
+    student.setClazz("123");
+    student.setTeacher("2131");
+
+    ConcurrentHashMap<String, Student> objectObjectConcurrentHashMap = new ConcurrentHashMap<>();
+    objectObjectConcurrentHashMap.put("s", student);
+
+    Student st1 = objectObjectConcurrentHashMap.get("s");
+
+    Assert.assertEquals(st1, student);
+  }
+
+  @Test
+  public void testStringCharAt() {
+    StringBuffer buffer = new StringBuffer("12312312312,");
+    Assert.assertEquals(buffer.charAt(buffer.length() - 1), ',');
   }
 }

@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface NotSerializable {
+public @interface Deserialize {
 
-  boolean value() default false;
+  boolean value() default true;
 }

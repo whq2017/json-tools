@@ -1,22 +1,31 @@
 package top.whq6.project.parser;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import top.whq6.project.annotation.As;
 import top.whq6.project.annotation.AsValueString;
-import top.whq6.project.annotation.NotDeserialize;
-import top.whq6.project.annotation.NotSerializable;
+import top.whq6.project.annotation.Deserialize;
+import top.whq6.project.annotation.Serializable;
 import top.whq6.project.bean.ClassBeanInfo;
 import top.whq6.project.bean.ClassFieldBean;
 import top.whq6.project.bean.ClassInfo;
 import top.whq6.project.cache.DefaultClassCache;
 
+
 public class DefaultClassParser implements ClassParser {
 
-  private static final DefaultClassCache CLASS_CACHE = new DefaultClassCache();
+  private static final DefaultClassCache<ClassBeanInfo> CLASS_CACHE = new DefaultClassCache<>();
+
+  private static final DefaultClassCache<ClassInfo> CLASS_INFO_CACHE = new DefaultClassCache<>();
 
   private static final ClassInfo OBJECT_CLASS =
       ClassInfo.builder().clazz(Object.class).className(Object.class.getName()).build();
@@ -35,17 +44,60 @@ public class DefaultClassParser implements ClassParser {
     ClassInfo info = parseClassInfo(cls);
     List<ClassFieldBean> fieldBean = parseFieldInfo(cls);
     ClassFieldBean[] allFieldBean = getAllFieldInfo(info, fieldBean);
+    Set<String> notSerialized = new HashSet<>();
+    Set<String> notDeserialize = new HashSet<>();
+
+    HashMap<String, String> name2AliasTable =
+        getName2AliasTable(allFieldBean, notSerialized, notDeserialize);
+    HashMap<String, Class<?>> allFieldName2Cls = getAllFieldName2Cls(allFieldBean);
 
     ClassBeanInfo beanInfo =
         ClassBeanInfo.builder()
             .classInfo(info)
-            .fieldBeans(fieldBean.toArray(EMPTY_CLASS_FIELD_BEAN))
             .allFieldBeans(allFieldBean)
+            .fieldBeans(fieldBean.toArray(EMPTY_CLASS_FIELD_BEAN))
+            .notSerialized(ImmutableSet.copyOf(notSerialized))
+            .notDeserialize(ImmutableSet.copyOf(notDeserialize))
+            .name2Alias(ImmutableMap.copyOf(name2AliasTable))
+            .allFieldCls(ImmutableMap.copyOf(allFieldName2Cls))
             .build();
 
     CLASS_CACHE.put(cls.getName(), beanInfo);
 
     return beanInfo;
+  }
+
+  private HashMap<String, Class<?>> getAllFieldName2Cls(ClassFieldBean[] allFieldBean) {
+    if (allFieldBean == null || allFieldBean.length == 0) {
+      return new HashMap<>(0);
+    }
+
+    HashMap<String, Class<?>> map = new HashMap<>(allFieldBean.length);
+    for (ClassFieldBean fieldBean : allFieldBean) {
+      map.put(fieldBean.getName(), fieldBean.getFieldType());
+    }
+
+    return map;
+  }
+
+  private HashMap<String, String> getName2AliasTable(
+      ClassFieldBean[] allFieldBean, Set<String> notSerialized, Set<String> notDeserialize) {
+    if (allFieldBean == null || allFieldBean.length == 0) {
+      return new HashMap<>(0);
+    }
+
+    HashMap<String, String> map = new HashMap<>(allFieldBean.length);
+    for (ClassFieldBean fieldBean : allFieldBean) {
+      map.put(fieldBean.getName(), fieldBean.getAlias());
+      if (!fieldBean.isSerialization()) {
+        notSerialized.add(fieldBean.getName());
+      }
+
+      if (!fieldBean.isDeserialize()) {
+        notDeserialize.add(fieldBean.getName());
+      }
+    }
+    return map;
   }
 
   private ClassFieldBean[] getAllFieldInfo(ClassInfo info, List<ClassFieldBean> fieldBean) {
@@ -69,6 +121,7 @@ public class DefaultClassParser implements ClassParser {
   private List<ClassFieldBean> parseFieldInfo(Class<?> cls) {
 
     Field[] declaredFields = cls.getDeclaredFields();
+    String clsName = cls.getName();
 
     if (declaredFields.length == 0) {
       return new ArrayList<>();
@@ -87,6 +140,7 @@ public class DefaultClassParser implements ClassParser {
 
               return ClassFieldBean.builder()
                   .name(name)
+                  .clsName(clsName)
                   .alias(alias)
                   .complexType(isComplexType(type))
                   .fieldType(type)
@@ -96,6 +150,7 @@ public class DefaultClassParser implements ClassParser {
                   .deserialize(deserialization)
                   .isArray(type.isArray())
                   .isEnum(type.isEnum())
+                  .isStatic(Modifier.isStatic(modifiers))
                   .build();
             })
         .collect(Collectors.toList());
@@ -113,7 +168,12 @@ public class DefaultClassParser implements ClassParser {
     } else if (superclass == Enum.class) {
       superBeanInfo = ENUM_CLASS;
     } else {
-      superBeanInfo = parseClassInfo(superclass);
+      if (CLASS_INFO_CACHE.exist(superclass.getName())) {
+        superBeanInfo = CLASS_INFO_CACHE.get(superclass.getName());
+      } else {
+        superBeanInfo = parseClassInfo(superclass);
+        CLASS_INFO_CACHE.put(superclass.getName(), superBeanInfo);
+      }
     }
 
     return ClassInfo.builder()
@@ -127,9 +187,9 @@ public class DefaultClassParser implements ClassParser {
 
   private boolean getSerializationAnnotationValue(Field field) {
 
-    NotSerializable annotation = field.getAnnotation(NotSerializable.class);
+    Serializable annotation = field.getAnnotation(Serializable.class);
     if (annotation == null) {
-      return false;
+      return true;
     }
 
     return annotation.value();
@@ -162,9 +222,9 @@ public class DefaultClassParser implements ClassParser {
   }
 
   private boolean getDeserializationAnnotationValue(Field field) {
-    NotDeserialize annotation = field.getAnnotation(NotDeserialize.class);
+    Deserialize annotation = field.getAnnotation(Deserialize.class);
     if (annotation == null) {
-      return false;
+      return true;
     }
 
     return annotation.value();

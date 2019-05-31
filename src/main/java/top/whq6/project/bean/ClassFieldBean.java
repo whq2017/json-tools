@@ -16,6 +16,8 @@ public class ClassFieldBean {
    */
   private String name;
 
+  private String clsName;
+
   /**
    * The field type.
    *
@@ -38,16 +40,16 @@ public class ClassFieldBean {
   private String alias;
 
   /**
-   * Indicates whether the field to serialize. default false.
+   * Indicates whether the field to serialize. default true.
    *
-   * The value is set by #{@link top.whq6.project.annotation.NotSerializable}.
+   * The value is set by #{@link top.whq6.project.annotation.Serializable}.
    */
   private boolean serialization;
 
   /**
-   * Indicates whether deserialize to field. default false.
+   * Indicates whether deserialize to field. default true.
    *
-   * The value is set by #{@link top.whq6.project.annotation.NotDeserialize}.
+   * The value is set by #{@link top.whq6.project.annotation.Deserialize}.
    */
   private boolean deserialize;
 
@@ -72,4 +74,6 @@ public class ClassFieldBean {
   private boolean isArray;
 
   private boolean isEnum;
+
+  private boolean isStatic;
 }

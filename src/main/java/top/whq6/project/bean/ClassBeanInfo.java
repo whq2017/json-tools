@@ -1,5 +1,7 @@
 package top.whq6.project.bean;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -19,8 +21,19 @@ public class ClassBeanInfo {
   private ClassFieldBean[] fieldBeans;
 
   /**
-   * All fields.
+   * All fields. Super class field and this class field.
    */
   private ClassFieldBean[] allFieldBeans;
+
+  /**
+   * All fields Class.
+   */
+  private ImmutableMap<String, Class<?>> allFieldCls;
+
+  private ImmutableMap<String, String> name2Alias;
+
+  private ImmutableSet<String> notSerialized;
+
+  private ImmutableSet<String> notDeserialize;
 }
 
