@@ -26,6 +26,14 @@ public class DateTypeForJSONHandler extends BaseTypeForJSONHandler {
     Configuration configuration = template.getConfiguration();
     String dateFormatter = configuration.getDateFormatter();
 
+    ImmutableMap<String, String> allDateFormatters = template.getAllDateFormatters();
+
+    String df = allDateFormatters.get(fieldName);
+
+    if (!"".equals(df.trim())) {
+      dateFormatter = df;
+    }
+
     String dateString = null;
     String methodName = FunctionUtil.toGetMethodName.apply(fieldName, false);
     try {

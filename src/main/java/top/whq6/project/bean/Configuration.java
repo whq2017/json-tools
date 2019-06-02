@@ -14,6 +14,8 @@ import top.whq6.project.handler.EnumNameForJSONHandler;
 @Getter
 public class Configuration {
 
+  private static final String DATE_FORMATTER = "yyyy-MM-dd HH:mm:ss";
+
   @Setter
   private boolean asValueString;
 
@@ -35,7 +37,7 @@ public class Configuration {
     asValueString = false;
     deserialize = true;
     serialize = true;
-    dateFormatter = "yyyy-MM-dd HH:mm:ss";
+    dateFormatter = DATE_FORMATTER;
     serializeNull = false;
     convertTypeHandlers = new EnumMap<>(TypeHandlerEnum.class);
 

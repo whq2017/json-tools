@@ -197,7 +197,9 @@ public class DefaultClassParser implements ClassParser {
 
   private String getDateFormatterAnnotationValue(Field field) {
     DateFormatter annotation = field.getAnnotation(DateFormatter.class);
-
+    if (annotation == null) {
+      return "";
+    }
     return annotation.value();
   }
 

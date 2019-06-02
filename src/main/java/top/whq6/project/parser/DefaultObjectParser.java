@@ -29,6 +29,12 @@ public class DefaultObjectParser extends AbstractObjectParser {
   @Override
   public String toJSONString(Object obj) {
 
+    Configuration configuration = this.getConfiguration();
+    if (configuration == null) {
+      log.error("Configuration field is not init");
+      throw new NullPointerException();
+    }
+
     if (templateParser.parseClassAndCreateTemplate(obj)) {
       return EMPTY_JSON;
     }
@@ -36,7 +42,7 @@ public class DefaultObjectParser extends AbstractObjectParser {
     ObjectTemplate template = templateParser.getTemplate();
 
     ArrayList<String> baseFieldList = analyzeObject2BaseList(obj, template);
-    // analyzeObject2DateList(obj, template);
+    ArrayList<String> dateFieldList = analyzeObject2DateList(obj, template);
     // analyzeObject2EnumList(obj, template);
     // analyzeObject2ComplexList(obj, template);
     // analyzeObject2ArrayTypeList(obj, template);
@@ -44,14 +50,22 @@ public class DefaultObjectParser extends AbstractObjectParser {
     return "";
   }
 
+  private ArrayList<String> analyzeObject2DateList(Object obj, ObjectTemplate template) {
+
+    ConvertTypeForJSONHandler handler = this.getConfiguration()
+        .getHandlerByName(TypeHandlerEnum.DATE);
+
+    Set<String> dateNames = template.getDateNames();
+
+    if (log.isDebugEnabled()) {
+      log.debug("Date type: [{}]", dateNames);
+    }
+
+    return streamFilter(obj, template, handler, dateNames);
+  }
+
 
   private ArrayList<String> analyzeObject2BaseList(Object obj, ObjectTemplate template) {
-
-    Configuration configuration = this.getConfiguration();
-    if (configuration == null) {
-      log.error("Configuration field is not init");
-      throw new NullPointerException();
-    }
 
     ConvertTypeForJSONHandler baseHandler =
         this.getConfiguration().getHandlerByName(TypeHandlerEnum.BASE);

@@ -54,6 +54,8 @@ public class ObjectTemplate implements Cloneable {
 
   private ImmutableMap<String, Class<?>> allFieldCls;
 
+  private ImmutableMap<String, String> allDateFormatters;
+
   public ObjectTemplate(String className, ClassBeanInfo beanInfo,
       Configuration configuration) {
     this();
@@ -65,6 +67,7 @@ public class ObjectTemplate implements Cloneable {
     this.allFieldCls = beanInfo.getAllFieldCls();
     this.notDeserialize = beanInfo.getNotDeserialize();
     this.notSerialized = beanInfo.getNotSerialized();
+    this.allDateFormatters = beanInfo.getDateFormatters();
 
     // init
     baseTypeValues = new HashSet<>();
@@ -89,6 +92,7 @@ public class ObjectTemplate implements Cloneable {
     objectTemplate.setStaticModifierValues(Sets.newHashSet(this.staticModifierValues));
     objectTemplate.setDateNames(Sets.newHashSet(dateNames));
     objectTemplate.setValueTypeNames(Sets.newHashSet(dateNames));
+    objectTemplate.setAllDateFormatters(allDateFormatters);
 
     objectTemplate.setAllFieldCls(this.allFieldCls);
     objectTemplate.setName2Alias(this.name2Alias);
