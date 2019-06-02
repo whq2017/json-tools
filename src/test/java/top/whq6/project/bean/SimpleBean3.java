@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import top.whq6.project.annotation.As;
-import top.whq6.project.annotation.Serializable;
+import top.whq6.project.annotation.Serialize;
 
 @Getter
 @Setter
@@ -19,7 +19,7 @@ public class SimpleBean3 {
   @As("nickname")
   private String name;
 
-  @Serializable(false)
+  @Serialize(false)
   private Integer age;
 
 }

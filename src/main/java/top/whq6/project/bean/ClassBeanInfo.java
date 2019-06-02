@@ -32,6 +32,8 @@ public class ClassBeanInfo {
 
   private ImmutableMap<String, String> name2Alias;
 
+  private ImmutableMap<String, String> dateFormatters;
+
   private ImmutableSet<String> notSerialized;
 
   private ImmutableSet<String> notDeserialize;

@@ -6,18 +6,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import top.whq6.project.annotation.Serialize;
 
-@Setter
 @Getter
+@Setter
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class SimpleBean4 {
+public class SimpleBeanValueType {
 
   private String name;
 
-  @Serialize(false)
-  private Double price;
+  private int age;
+
+  private byte sex;
 
 }

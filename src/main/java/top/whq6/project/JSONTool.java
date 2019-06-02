@@ -1,15 +1,31 @@
 package top.whq6.project;
 
+import lombok.Getter;
+import lombok.Setter;
+import top.whq6.project.bean.Configuration;
+import top.whq6.project.parser.DefaultObjectParser;
+
 public class JSONTool {
 
-  public String objectToString(Object obj) {
+  @Getter
+  @Setter
+  private Configuration configuration;
 
-    return "";
+  private DefaultObjectParser parser;
+
+  public JSONTool(Configuration configuration) {
+    this.parser = new DefaultObjectParser(configuration);
+    this.configuration = configuration;
   }
 
-  public <T> T stringToObject(String jsonString, Class<T> clazz) {
-
-    return null;
+  public JSONTool() {
+    this(new Configuration());
   }
+
+  public String toJSONString(Object obj) {
+
+    return parser.toJSONString(obj);
+  }
+
 
 }

@@ -26,4 +26,6 @@ public class ClassInfo {
    */
   private ClassInfo superBeans;
 
+  private boolean isValueType;
+
 }

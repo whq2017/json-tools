@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
+import top.whq6.project.annotation.Serialize;
 
 @Getter
 @Builder
@@ -42,7 +43,7 @@ public class ClassFieldBean {
   /**
    * Indicates whether the field to serialize. default true.
    *
-   * The value is set by #{@link top.whq6.project.annotation.Serializable}.
+   * The value is set by #{@link Serialize}.
    */
   private boolean serialization;
 
@@ -52,6 +53,11 @@ public class ClassFieldBean {
    * The value is set by #{@link top.whq6.project.annotation.Deserialize}.
    */
   private boolean deserialize;
+
+  /**
+   * Date formatter string if it is #{@link java.util.Date} instance.
+   */
+  private String dateFormatter;
 
 
   /**
@@ -76,4 +82,8 @@ public class ClassFieldBean {
   private boolean isEnum;
 
   private boolean isStatic;
+
+  private boolean isDate;
+
+  private boolean isValueType;
 }

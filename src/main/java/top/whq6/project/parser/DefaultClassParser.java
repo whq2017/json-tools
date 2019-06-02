@@ -2,25 +2,30 @@ package top.whq6.project.parser;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import top.whq6.project.annotation.As;
 import top.whq6.project.annotation.AsValueString;
+import top.whq6.project.annotation.DateFormatter;
 import top.whq6.project.annotation.Deserialize;
-import top.whq6.project.annotation.Serializable;
+import top.whq6.project.annotation.Serialize;
 import top.whq6.project.bean.ClassBeanInfo;
 import top.whq6.project.bean.ClassFieldBean;
 import top.whq6.project.bean.ClassInfo;
 import top.whq6.project.cache.DefaultClassCache;
 
 
+@Slf4j
 public class DefaultClassParser implements ClassParser {
 
   private static final DefaultClassCache<ClassBeanInfo> CLASS_CACHE = new DefaultClassCache<>();
@@ -50,6 +55,13 @@ public class DefaultClassParser implements ClassParser {
     HashMap<String, String> name2AliasTable =
         getName2AliasTable(allFieldBean, notSerialized, notDeserialize);
     HashMap<String, Class<?>> allFieldName2Cls = getAllFieldName2Cls(allFieldBean);
+    HashMap<String, String> dateFormatters = getAllDateFormatter(allFieldBean);
+
+    if (log.isDebugEnabled()) {
+      log.debug("This class[{}]'s all field names: {}", cls.getName(), fieldBean);
+      log.debug("This class[{}]'s and super's all field names: {}", cls.getName(),
+          Lists.newArrayList(allFieldBean));
+    }
 
     ClassBeanInfo beanInfo =
         ClassBeanInfo.builder()
@@ -58,6 +70,7 @@ public class DefaultClassParser implements ClassParser {
             .fieldBeans(fieldBean.toArray(EMPTY_CLASS_FIELD_BEAN))
             .notSerialized(ImmutableSet.copyOf(notSerialized))
             .notDeserialize(ImmutableSet.copyOf(notDeserialize))
+            .dateFormatters(ImmutableMap.copyOf(dateFormatters))
             .name2Alias(ImmutableMap.copyOf(name2AliasTable))
             .allFieldCls(ImmutableMap.copyOf(allFieldName2Cls))
             .build();
@@ -65,6 +78,17 @@ public class DefaultClassParser implements ClassParser {
     CLASS_CACHE.put(cls.getName(), beanInfo);
 
     return beanInfo;
+  }
+
+  private HashMap<String, String> getAllDateFormatter(ClassFieldBean[] allFieldBean) {
+
+    HashMap<String, String> map = new HashMap<>();
+    for (ClassFieldBean fieldBean : allFieldBean) {
+      if (fieldBean.isDate()) {
+        map.put(fieldBean.getName(), fieldBean.getDateFormatter());
+      }
+    }
+    return map;
   }
 
   private HashMap<String, Class<?>> getAllFieldName2Cls(ClassFieldBean[] allFieldBean) {
@@ -107,6 +131,12 @@ public class DefaultClassParser implements ClassParser {
     beanArrayList.addAll(fieldBean);
 
     ClassInfo superClass = info.getSuperBeans();
+
+    // base type
+    if (superClass == null) {
+      return beanArrayList.toArray(EMPTY_CLASS_FIELD_BEAN);
+    }
+
     while (superClass != OBJECT_CLASS && superClass != ENUM_CLASS) {
       // parser superClass
       List<ClassFieldBean> classFieldBeans = parseFieldInfo(superClass.getClazz());
@@ -137,11 +167,18 @@ public class DefaultClassParser implements ClassParser {
               boolean toStringType = getToStringTypeAnnotationValue(field);
               boolean serialization = getSerializationAnnotationValue(field);
               boolean deserialization = getDeserializationAnnotationValue(field);
+              String formatterAnnotationValue = null;
+              boolean isDate = type == Date.class;
+
+              if (isDate) {
+                formatterAnnotationValue = getDateFormatterAnnotationValue(field);
+              }
 
               return ClassFieldBean.builder()
                   .name(name)
                   .clsName(clsName)
                   .alias(alias)
+                  .isValueType(isValueType(cls))
                   .complexType(isComplexType(type))
                   .fieldType(type)
                   .toStringType(toStringType)
@@ -150,15 +187,44 @@ public class DefaultClassParser implements ClassParser {
                   .deserialize(deserialization)
                   .isArray(type.isArray())
                   .isEnum(type.isEnum())
+                  .isDate(isDate)
+                  .dateFormatter(formatterAnnotationValue)
                   .isStatic(Modifier.isStatic(modifiers))
                   .build();
             })
         .collect(Collectors.toList());
   }
 
+  private String getDateFormatterAnnotationValue(Field field) {
+    DateFormatter annotation = field.getAnnotation(DateFormatter.class);
+
+    return annotation.value();
+  }
+
   private ClassInfo parseClassInfo(Class<?> cls) {
 
+    if (cls == Object.class) {
+      return OBJECT_CLASS;
+    }
+
     String name = cls.getName();
+
+    boolean isValueType = isValueType(cls);
+
+    if (log.isDebugEnabled()) {
+      log.debug("Class type: {}", cls.getName());
+      log.debug("isValueType(cls) return: {}", isValueType);
+    }
+
+    // int short double ....
+    if (isValueType) {
+      return ClassInfo.builder()
+          .className(name)
+          .clazz(cls)
+          .isValueType(true)
+          .build();
+    }
+
     Class<?> superclass = cls.getSuperclass();
     Class<?>[] interfaces = cls.getInterfaces();
 
@@ -181,13 +247,14 @@ public class DefaultClassParser implements ClassParser {
         .clazz(cls)
         .interfaces(interfaces)
         .superClass(superclass)
+        .isValueType(false)
         .superBeans(superBeanInfo)
         .build();
   }
 
   private boolean getSerializationAnnotationValue(Field field) {
 
-    Serializable annotation = field.getAnnotation(Serializable.class);
+    Serialize annotation = field.getAnnotation(Serialize.class);
     if (annotation == null) {
       return true;
     }
@@ -239,6 +306,19 @@ public class DefaultClassParser implements ClassParser {
         && type != Double.class
         && type != Character.class
         && type != String.class
-        && type != Object.class;
+        && type != Boolean.class
+        && type != Object.class
+        && !isValueType(type);
+  }
+
+  private boolean isValueType(Class<?> type) {
+    return type == int.class
+        || type == short.class
+        || type == long.class
+        || type == byte.class
+        || type == float.class
+        || type == double.class
+        || type == char.class
+        || type == boolean.class;
   }
 }
