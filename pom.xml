@@ -10,7 +10,7 @@
 
 
   <properties>
-    <junit-version>4.12</junit-version>
+    <junit-version>4.13.1</junit-version>
     <lombok-version>1.18.6</lombok-version>
     <commons-langs-version>3.9</commons-langs-version>
     <guava-version>27.1-jre</guava-version>
